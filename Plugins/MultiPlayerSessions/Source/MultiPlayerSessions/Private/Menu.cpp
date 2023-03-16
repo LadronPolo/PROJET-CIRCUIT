@@ -6,6 +6,8 @@
 #include "MultiplayerSessionsSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
+#include "Components/VerticalBox.h"
+#include "Animation/WidgetAnimation.h"
 
 void UMenu::MenuSetup(int32 NumOfPublicConnections, FString TypeOfMatch, FString LobbyPath)
 {
@@ -64,6 +66,11 @@ bool UMenu::Initialize()
 		JoinButton->OnClicked.AddDynamic(this, &UMenu::JoinButtonClicked);
 	}
 
+	if (LoadingContainer)
+	{
+		LoadingContainer->SetVisibility(ESlateVisibility::Hidden);
+	}
+
 	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance)
 	{
@@ -84,32 +91,21 @@ bool UMenu::Initialize()
 
 void UMenu::NativeDestruct()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Green, FString(TEXT("Destroy menu")));
 	MenuTearDown();
 	Super::NativeDestruct();
 }
 
 void UMenu::OnCreateSession(bool bWasSuccessful)
 {
-	/*if (sessionCreated)
-		return;*/
+	if (sessionCreated)
+		return;
 
 	if (bWasSuccessful)
 	{
 		sessionCreated = true;
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Green, FString(TEXT("Session created successfully")));
-		}
-
 		UWorld* World = GetWorld();
 		if (World)
-		{
-			if (!World->ServerTravel(PathToLobby))
-				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Can't Travel")));
-			else
-				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Traveled")));
-		}
+			World->ServerTravel(PathToLobby);
 	}
 	else
 	{
@@ -131,6 +127,9 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResu
 
 	if (!bWasSuccessful || SessionResults.Num() == 0)
 	{
+		LoadingContainer->SetVisibility(ESlateVisibility::Hidden);
+		ButtonContainer->SetVisibility(ESlateVisibility::Visible);
+
 		JoinButton->SetIsEnabled(true);
 		if (GEngine)
 		{
@@ -144,7 +143,8 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResu
 		Result.Session.SessionSettings.Get(FName("MatchType"), SettingsValue);
 		if (SettingsValue == MatchType)
 		{
-			MultiplayerSessionsSubsystem->JoinSession(Result);
+			findResult = Result;
+			PlayAnimation(Fade)->OnSequenceFinishedPlaying().AddUObject(this, &UMenu::OnAnimationCompleteJoin);;
 			return;
 		}
 	}	
@@ -187,18 +187,17 @@ void UMenu::HostButtonClicked()
 {
 	HostButton->SetIsEnabled(false);
 	if (MultiplayerSessionsSubsystem)
-	{
-		MultiplayerSessionsSubsystem->CreateSession(NumPublicConnections, MatchType);
-	}
+		PlayAnimation(Fade, 0, 1, EUMGSequencePlayMode::Reverse)->OnSequenceFinishedPlaying().AddUObject(this, &UMenu::OnAnimationCompleteHost);
 }
 
 void UMenu::JoinButtonClicked()
 {
+	LoadingContainer->SetVisibility(ESlateVisibility::Visible);
+	ButtonContainer->SetVisibility(ESlateVisibility::Hidden);
+
 	JoinButton->SetIsEnabled(false);
 	if (MultiplayerSessionsSubsystem)
-	{
 		MultiplayerSessionsSubsystem->FindSessions(10000);
-	}
 }
 
 void UMenu::MenuTearDown()
@@ -215,4 +214,14 @@ void UMenu::MenuTearDown()
 			PlayerController->SetShowMouseCursor(false);
 		}
 	}
+}
+
+void UMenu::OnAnimationCompleteHost(UUMGSequencePlayer& Player)
+{
+	MultiplayerSessionsSubsystem->CreateSession(NumPublicConnections, MatchType);
+}
+
+void UMenu::OnAnimationCompleteJoin(UUMGSequencePlayer& Player)
+{
+	MultiplayerSessionsSubsystem->JoinSession(findResult);
 }

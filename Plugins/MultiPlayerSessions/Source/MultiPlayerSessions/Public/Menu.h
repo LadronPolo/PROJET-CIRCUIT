@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Animation/UMGSequencePlayer.h"
+#include "OnlineSessionSettings.h"
 #include "Menu.generated.h"
 
 /**
@@ -39,7 +41,10 @@ protected:
 	UFUNCTION()
 	void OnStartSession(bool bWasSuccessful);
 
-private:
+public:
+
+	UPROPERTY(meta = (BindWidget))
+	class UVerticalBox* ButtonContainer;
 
 	UPROPERTY(meta = (BindWidget))
 	class UButton* HostButton;
@@ -55,6 +60,12 @@ private:
 
 	void MenuTearDown();
 
+	UPROPERTY(meta = (BindWidget))
+	UVerticalBox* LoadingContainer;
+
+	UPROPERTY(meta = (BindWidgetAnim), BlueprintReadWrite, Transient)
+	class UWidgetAnimation* Fade;
+
 	// The Subsystem designed to handle all online session functionnality
 	class UMultiplayerSessionsSubsystem* MultiplayerSessionsSubsystem;
 
@@ -62,4 +73,8 @@ private:
 	FString MatchType{TEXT("FreeForAll")};
 	FString PathToLobby{ TEXT("") };
 	bool sessionCreated = false;
+	FOnlineSessionSearchResult findResult;
+
+	void OnAnimationCompleteHost(UUMGSequencePlayer& Player);
+	void OnAnimationCompleteJoin(UUMGSequencePlayer& Player);
 };
