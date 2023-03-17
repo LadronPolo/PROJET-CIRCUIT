@@ -144,7 +144,7 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResu
 		if (SettingsValue == MatchType)
 		{
 			findResult = Result;
-			PlayAnimation(Fade)->OnSequenceFinishedPlaying().AddUObject(this, &UMenu::OnAnimationCompleteJoin);;
+			PlayAnimation(Fade, 0, 1, EUMGSequencePlayMode::Reverse)->OnSequenceFinishedPlaying().AddUObject(this, &UMenu::OnAnimationCompleteJoin);
 			return;
 		}
 	}	
