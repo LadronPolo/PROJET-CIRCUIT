@@ -39,6 +39,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		UFloatingPawnMovement* floatingPawnMovement_;
 
+	UPROPERTY(VisibleAnywhere, Category = "Stats")
+		UActorComponent* cameraFollowsThis_;
+
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		float speedOfRotation_;
 
@@ -58,9 +61,11 @@ public:
 		float gravitySpeed_;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
-		bool debug;
+		bool debug = true;
 
 	float timePast_;
+
+	FVector lastRotation_;
 
 protected:
 	// Called when the game starts or when spawned
@@ -74,10 +79,21 @@ protected:
 	void MoveCameraX(float input);
 	void RotateShip(float DeltaTime);
 
+	void StartDrift();
+	void StopDrift();
+
 	float axisX_;
 	float axisY_;
 	float accelInput_;
+	bool isDrifiting_ = false;
+	float originalTurningBoost_;
+	float originalDeceleration_;
+	float speedMultiplier_;
 
+	FVector driftDirection_;
+	FVector newDirection_;
+	FVector forwardDir_;
+	FVector desiredDir_;
 	FRotator currentRotation;
 
 public:	

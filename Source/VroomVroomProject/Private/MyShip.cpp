@@ -4,12 +4,15 @@
 #include "MyShip.h"
 #include "Math/NumericLimits.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 AMyShip::AMyShip()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	cameraFollowsThis_ = CreateDefaultSubobject<UActorComponent>("CameraFollows");
 
 	shipMesh_ = CreateDefaultSubobject<UStaticMeshComponent>("ShipBody");
 	shipMesh_->SetupAttachment(RootComponent);
@@ -30,19 +33,20 @@ AMyShip::AMyShip()
 	cameraComponent_->SetupAttachment(springArm_);
 
 	speedOfRotation_ = 10.0f;
-
-	speedOfRotation_ = 10.0f;
 	levitateHeight_ = 10.0f;
 	timePast_ = 0.0f;
 	levitateSpeed_ = 5.0f;
 	gravitySpeed_ = 150.0f;
+
+	originalTurningBoost_ = floatingPawnMovement_->TurningBoost;
+	originalDeceleration_ = floatingPawnMovement_->Deceleration;
 }
 
 // Called when the game starts or when spawned
 void AMyShip::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	lastRotation_ = GetActorUpVector();
 }
 
 void AMyShip::MoveShip(float DeltaTime)
@@ -56,25 +60,21 @@ void AMyShip::MoveShip(float DeltaTime)
 		inputDirection = cameraDirectionForward * 1.0f + cameraDirectionRight * axisY_;
 	}
 
-	if (!inputDirection.IsNearlyZero() || accelInput_ != 0.0f) {
-		FVector currentDirection = GetActorRotation().Vector();
-		currentDirection.Normalize();
+	FRotator playerRot = GetActorRotation();
+	playerRot = FMath::Lerp(GetActorRotation(), currentRotation, speedOfRotation_ * DeltaTime * 2.0f);
 
-		float dot = FVector::DotProduct(GetActorRightVector(), inputDirection);
 
-		FRotator playerRot = FMath::Lerp(GetActorRotation(), inputDirection.Rotation(), speedOfRotation_ * DeltaTime);
-		playerRot.Pitch = FMath::Lerp(GetActorRotation().Pitch, currentRotation.Pitch, speedOfRotation_ * DeltaTime * 1.25f);
-		playerRot.Roll = FMath::Lerp(GetActorRotation().Roll, currentRotation.Roll + dot * 50.0f, speedOfRotation_ * DeltaTime * 1.25f);
-
-		SetActorRotation(playerRot);
+	if (axisY_ != 0.0f)
+	{
+		speedMultiplier_ = FMath::Lerp(0.0f, 10.0f, speedOfRotation_ * DeltaTime * 2.0f);
 	}
-	else {
-		FRotator playerRot = GetActorRotation();
-		playerRot.Pitch = FMath::Lerp(GetActorRotation().Pitch, currentRotation.Pitch, speedOfRotation_ * DeltaTime * 1.25f);
-		playerRot.Roll = FMath::Lerp(GetActorRotation().Roll, currentRotation.Roll, speedOfRotation_ * DeltaTime * 1.25f);
-
-		SetActorRotation(playerRot);
+	else
+	{
+		speedMultiplier_ = FMath::Lerp(speedMultiplier_, 0.0f, speedOfRotation_ * DeltaTime * 2.0f);
 	}
+
+	SetActorRotation(playerRot);
+	AddActorLocalRotation(FRotator(0, axisY_ * speedMultiplier_, 0));
 }
 
 void AMyShip::RotateShip(float DeltaTime)
@@ -83,79 +83,51 @@ void AMyShip::RotateShip(float DeltaTime)
 	FCollisionQueryParams traceParams;
 	traceParams.AddIgnoredActor(this);
 
-	FVector startFront = hoverPoint1_->GetComponentLocation();
-	FVector endFront = startFront - FVector(0.0f, 0.0f, desiredHeight_ * 1000.0f);
-
-	FVector A;
-	FVector B;
-	FVector C;
-
-	if (debug)DrawDebugLine(GetWorld(), startFront, endFront, FColor::Green, false, -1.0f);
-	if (GetWorld()->LineTraceSingleByChannel(hit, startFront, endFront, ECC_Visibility, traceParams)) {
-		A = hit.ImpactPoint + (FVector::UpVector * desiredHeight_);
-		if (debug)DrawDebugSphere(GetWorld(), A, 100.0f, 32, FColor::Red);
-	}
-
-	FVector startRight = hoverPoint2_->GetComponentLocation();
-	FVector endRight = startRight - FVector(0.0f, 0.0f, desiredHeight_ * 1000.0f);
-
-	FHitResult hit1;
-	if (debug)DrawDebugLine(GetWorld(), startRight, endRight, FColor::Green, false, -1.0f);
-	if (GetWorld()->LineTraceSingleByChannel(hit1, startRight, endRight, ECC_Visibility, traceParams)) {
-		B = hit1.ImpactPoint + (FVector::UpVector * desiredHeight_);
-		if (debug)DrawDebugSphere(GetWorld(), B, 100.0f, 32, FColor::Red);
-	}
-
-	FVector startLeft = hoverPoint3_->GetComponentLocation();
-	FVector endLeft = startLeft - FVector(0.0f, 0.0f, desiredHeight_ * 1000.0f);
-
-	FHitResult hit2;
-	if (debug)DrawDebugLine(GetWorld(), startLeft, endLeft, FColor::Green, false, -1.0f);
-	if (GetWorld()->LineTraceSingleByChannel(hit2, startLeft, endLeft, ECC_Visibility, traceParams)) {
-		C = hit2.ImpactPoint + (FVector::UpVector * desiredHeight_);
-		if (debug)DrawDebugSphere(GetWorld(), C, 100.0f, 32, FColor::Red);
-	}
-
 	FVector center;
-	center.X = (A.X + B.X + C.X) / 3.0f;
-	center.Y = (A.Y + B.Y + C.Y) / 3.0f;
-	center.Z = (A.Z + B.Z + C.Z) / 3.0f;
+	FHitResult hit3;
 
-	FVector AC = C - A;
-	AC.Normalize();
-
-	FVector AB = B - A;
-	AB.Normalize();
-
-	FVector cross = FVector::CrossProduct(AB, AC);
-
-	center.Z += (FMath::Cos(timePast_ * levitateSpeed_)) * levitateHeight_;
+	if (GetWorld()->LineTraceSingleByChannel(hit3, GetActorLocation(), GetActorLocation() - lastRotation_ * (desiredHeight_ * 5.0f), ECC_Visibility, traceParams)) {
+		center = hit3.ImpactPoint + hit3.ImpactNormal * (desiredHeight_);
+		shipMesh_->SetEnableGravity(false);
+	}
+	else
+	{
+		shipMesh_->SetEnableGravity(true);
+	}
 
 	if (debug)DrawDebugSphere(GetWorld(), center, 100.0f, 32, FColor::Yellow);
-	if (debug)DrawDebugDirectionalArrow(GetWorld(), center, center + (cross * 500.0f), 5000.0f, FColor::Yellow, false, -1.0f, (uint8)0U, 20.0f);
-
-	timePast_ += DeltaTime;
-	if ((timePast_ + 10.0f) > MAX_FLT) {
-		timePast_ = 0.0f;
-	}
 
 	FVector resultingPos;
 	if (center.Z >= GetActorLocation().Z) {
 		resultingPos = FMath::Lerp(GetActorLocation(), FVector(GetActorLocation().X, GetActorLocation().Y, center.Z), (DeltaTime * speedOfGoingToHeight_));
 	}
 	else {
-		resultingPos = FMath::Lerp(GetActorLocation(), FVector(GetActorLocation().X, GetActorLocation().Y, center.Z), (DeltaTime * speedOfGoingToHeight_) / (FVector::Dist(hit.ImpactPoint, A) / gravitySpeed_));
+		resultingPos = FMath::Lerp(GetActorLocation(), FVector(GetActorLocation().X, GetActorLocation().Y, center.Z), (DeltaTime * speedOfGoingToHeight_) / (FVector::Dist(hit.ImpactPoint, center) / gravitySpeed_));
 	}
 	SetActorLocation(resultingPos);
 
-	FVector forward = A - center;
-	forward.Normalize();
-
-	if (debug)DrawDebugDirectionalArrow(GetWorld(), center, center + (forward * 500.0f), 5000.0f, FColor::Yellow, false, -1.0f, (uint8)0U, 20.0f);
-
-	FRotator rotation = UKismetMathLibrary::MakeRotFromXZ(forward, cross);
+	FRotator rotation = UKismetMathLibrary::MakeRotFromYZ(GetActorRightVector(), hit3.ImpactNormal);
 
 	currentRotation = rotation;
+
+	lastRotation_ = hit3.ImpactNormal;
+}
+
+void AMyShip::StartDrift()
+{
+	//if(floatingPawnMovement_->Velocity.Length() > 1000.0f)
+	isDrifiting_ = true;
+
+	forwardDir_ = GetActorForwardVector();
+	driftDirection_ = forwardDir_.RotateAngleAxis(FMath::CeilToInt(-axisY_) * 90.0f, GetActorUpVector());
+
+	desiredDir_ = forwardDir_;
+
+}
+
+void AMyShip::StopDrift()
+{
+	isDrifiting_ = false;
 }
 
 void AMyShip::ForwardAxis(float input)
@@ -171,12 +143,56 @@ void AMyShip::SideAxis(float input)
 void AMyShip::Accelerate(float input)
 {
 	accelInput_ = input;
-	AddMovementInput(GetActorForwardVector(), input);
+
+	FVector A = GetActorLocation() + GetActorForwardVector();
+	FVector M = GetActorLocation();
+	FVector B = GetActorLocation() + driftDirection_;
+
+	FVector center = ((A + B) / 2);
+	FVector green = A - GetActorLocation();
+	FVector targetDirection;
+
+	newDirection_ = center - M;
+
+	A.Normalize();
+	newDirection_.Normalize();
+	driftDirection_.Normalize();
+
+	if (isDrifiting_)
+	{
+
+		float pitch = FMath::Clamp(GetActorRotation().Yaw, forwardDir_.Rotation().Yaw, driftDirection_.Rotation().Yaw);
+		SetActorRotation(FRotator(0.0f, pitch, 0.0f));
+
+		if (axisY_ != 0.0f)
+		{
+			AddMovementInput(newDirection_, input);
+			desiredDir_.RotateAngleAxis(FMath::CeilToInt(axisY_), GetActorUpVector());
+
+			float desiredDirPitch = FMath::Clamp(desiredDir_.Rotation().Yaw, forwardDir_.Rotation().Yaw, driftDirection_.Rotation().Yaw);
+		}
+
+		floatingPawnMovement_->TurningBoost = originalTurningBoost_ - 4.0f;
+		floatingPawnMovement_->Deceleration = originalDeceleration_ - 100.0f;
+	}
+	else
+	{
+		floatingPawnMovement_->TurningBoost = FMath::Lerp(floatingPawnMovement_->TurningBoost, originalTurningBoost_, GetWorld()->DeltaTimeSeconds * 2.0f);
+		floatingPawnMovement_->Deceleration = FMath::Lerp(floatingPawnMovement_->Deceleration, originalDeceleration_, GetWorld()->DeltaTimeSeconds * 5.0f);
+		springArm_->SocketOffset.Y = FMath::Lerp(springArm_->SocketOffset.Y, 0.0f, GetWorld()->DeltaTimeSeconds * 2.0f);
+
+		AddMovementInput(GetActorForwardVector(), input);
+	}
+
+	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + desiredDir_ * 1000.0f, FColor::Yellow, false, -1.0f, 100.0f);
+	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + forwardDir_ * 1000.0f, FColor::Green, false, -1.0f, 100.0f);
+	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + newDirection_ * 1000.0f, FColor::Red, false, -1.0f, 100.0f);
+	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + driftDirection_ * 1000.0f, FColor::Blue, false, -1.0f, 100.0f);
 }
 
 void AMyShip::MoveCameraX(float input)
 {
-	springArm_->AddRelativeRotation(FRotator(0, input, 0));
+	//springArm_->AddRelativeRotation(FRotator(0, input, 0));
 }
 
 // Called every frame
@@ -184,7 +200,7 @@ void AMyShip::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	MoveShip(DeltaTime);
-
+	RotateShip(DeltaTime);
 }
 
 // Called to bind functionality to input
@@ -196,6 +212,8 @@ void AMyShip::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		PlayerInputComponent->BindAxis("Accel", this, &AMyShip::Accelerate);
 		PlayerInputComponent->BindAxis("MoveLateral", this, &AMyShip::SideAxis);
 		PlayerInputComponent->BindAxis("LookRight", this, &AMyShip::MoveCameraX);
+		PlayerInputComponent->BindAction("Drift", IE_Pressed, this, &AMyShip::StartDrift);
+		PlayerInputComponent->BindAction("Drift", IE_Released, this, &AMyShip::StopDrift);
 	}
 }
 
