@@ -19,11 +19,18 @@ void Acar::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	if (IsBoosting)
+	{
 		EnergyRemaining -= DeltaTime * BoostCost;
+		if (EnergyRemaining <= 0)
+		{
+			EnergyRemaining = 0;
+			IsBoosting = false;
+		}
+	}
 	else
 		EnergyRemaining = EnergyRemaining < EnergyMax ? (EnergyRemaining + DeltaTime * EnergyChargeRate) : EnergyMax;
 	
-	BoostAvaillable = EnergyRemaining > EnergyNeededToBoost;
+	BoostAvaillable = EnergyRemaining >= EnergyNeededToBoost;
 }
 
 void Acar::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
