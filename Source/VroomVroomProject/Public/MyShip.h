@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "AbilityPawn.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "MyShip.generated.h"
 
 UCLASS()
-class VROOMVROOMPROJECT_API AMyShip : public APawn
+class VROOMVROOMPROJECT_API AMyShip : public APawn, public IAbilityPawn
 {
 	GENERATED_BODY()
 
@@ -38,9 +39,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		UFloatingPawnMovement* floatingPawnMovement_;
-
-	UPROPERTY(VisibleAnywhere, Category = "Stats")
-		UActorComponent* cameraFollowsThis_;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		float speedOfRotation_;
@@ -82,18 +80,33 @@ protected:
 	void StartDrift();
 	void StopDrift();
 
+	void CameraLookAtPlayer();
+
+	FVector lastShipPosition_;
+	bool justDetached_ = false;
+
 	float axisX_;
 	float axisY_;
 	float accelInput_;
-	bool isDrifiting_ = false;
+	bool  isDrifiting_ = false;
 	float originalTurningBoost_;
 	float originalDeceleration_;
 	float speedMultiplier_;
 
-	FVector driftDirection_;
-	FVector newDirection_;
-	FVector forwardDir_;
-	FVector desiredDir_;
+	bool isFalling_ = false;
+
+	float deltaTime_;
+
+	float angleAxis_ = 0.0f;
+
+	FVector green_;
+	FVector blue_;
+	FVector red_;
+
+	FVector yellow_;
+
+
+	FVector blackVector_;
 	FRotator currentRotation;
 
 public:	
@@ -103,4 +116,15 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+
+	void PickItem_Implementation(TSubclassOf<AItem> pItem) override;
+
+	void FreezeInput_Implementation(float duration) override;
+
+	void RestoreInput_Implementation() override;
+
+	void Boost_Implementation() override;
+
+	UFUNCTION(BlueprintCallable)
+	void useItem();
 };
