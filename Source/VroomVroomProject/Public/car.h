@@ -47,4 +47,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetEnergyChargeRate(float pValue);
 
+	UFUNCTION(BlueprintCallable)
+	float getEnergyChargeRate();
+
 };

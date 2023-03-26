@@ -101,3 +101,8 @@ void Acar::SetEnergyChargeRate(float pValue)
 {
 	EnergyChargeRate = pValue;
 }
+
+float Acar::getEnergyChargeRate()
+{
+	return EnergyChargeRate;
+}
