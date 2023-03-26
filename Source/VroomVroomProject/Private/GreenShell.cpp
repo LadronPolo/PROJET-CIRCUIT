@@ -44,7 +44,6 @@ void AGreenShell::ShellHit(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 	IAbilityPawn* ability = Cast<IAbilityPawn>(OtherActor);
 	if (ability && playerOwner != OtherActor)
 	{
-	
 		IAbilityPawn::Execute_FreezeInput(OtherActor, freezeDuration);
 		IAbilityPawn::Execute_SetVelocity(OtherActor, FVector(0, 0, 0));
 		Destroy();
@@ -73,5 +72,17 @@ void AGreenShell::Execute_Implementation()
 void AGreenShell::SetPlayerOwner(AActor* pPlayerOwner)
 {
 	Super::SetPlayerOwner(pPlayerOwner);
-	AttachToActor(pPlayerOwner, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Shell");
+
+	TArray<UActorComponent*> elements = pPlayerOwner->GetComponentsByClass(UStaticMeshComponent::StaticClass());
+	for (int i = 0; i < elements.Num(); i++)
+	{
+		UStaticMeshComponent* meshCp = Cast<UStaticMeshComponent>(elements[i]);
+		UStaticMesh* mesh = meshCp->GetStaticMesh();
+		if (mesh->FindSocket("Shell") != nullptr)
+		{
+			AttachToComponent(meshCp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Shell");
+			return;
+		}
+
+	}
 }
