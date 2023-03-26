@@ -30,8 +30,8 @@ public:
 	FTimerHandle invincibleTimer;
 	bool invincible = false;
 
+	FTimerHandle miniatureTimer;
 
-	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
 	void PickItem(TSubclassOf<AItem> pItem);
 
@@ -64,4 +64,29 @@ public:
 	void UseItem();
 
 	virtual void UseItem_Implementation() = 0;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+	void SetVelocity(FVector value);
+
+	virtual void SetVelocity_Implementation(FVector value) = 0;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+	void AddImpule(FVector value);
+
+	virtual void AddImpule_Implementation(FVector value) = 0;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+	void Miniaturize(float duration);
+
+	virtual void Miniaturize_Implementation(float duration) = 0;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+	void ResetMiniaturize();
+
+	virtual void ResetMiniaturize_Implementation() = 0;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+	void AddEnergy(float energy);
+
+	virtual void AddEnergy_Implementation(float energy) = 0;
 };

@@ -76,4 +76,14 @@ private:
 	void DisableInvincible_Implementation() override {};
 
 	void UseItem_Implementation() override;
+
+	void SetVelocity_Implementation(FVector value) override {};
+
+	void AddImpule_Implementation(FVector value) override {};
+
+	void Miniaturize_Implementation(float duration) override {};
+
+	void ResetMiniaturize_Implementation() override {};
+
+	void AddEnergy_Implementation(float energy) override {};
 };

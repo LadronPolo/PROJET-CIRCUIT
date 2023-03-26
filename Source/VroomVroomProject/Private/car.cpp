@@ -88,6 +88,27 @@ void Acar::UseItem_Implementation()
 	}
 }
 
+void Acar::Miniaturize_Implementation(float duration)
+{
+	SetActorScale3D(FVector(0.25f, 0.25f, 0.25f));
+	GetWorldTimerManager().SetTimer(miniatureTimer, this, &Acar::ResetMiniaturizeTrigger, duration);
+}
+
+void Acar::ResetMiniaturizeTrigger()
+{
+	IAbilityPawn::Execute_ResetMiniaturize(this);
+}
+
+void Acar::ResetMiniaturize_Implementation()
+{
+	SetActorScale3D(FVector(1, 1, 1));
+}
+
+void Acar::AddEnergy_Implementation(float energy)
+{
+	EnergyRemaining = EnergyRemaining < EnergyMax ? (EnergyRemaining + energy) : EnergyMax;
+}
+
 float Acar::getEnergyRemaining()
 {
 	return EnergyRemaining;
@@ -116,4 +137,9 @@ void Acar::SetEnergyChargeRate(float pValue)
 float Acar::getEnergyChargeRate()
 {
 	return EnergyChargeRate;
+}
+
+bool Acar::IsInvincible()
+{
+	return invincible;
 }
