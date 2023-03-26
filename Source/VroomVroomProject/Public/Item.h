@@ -18,12 +18,10 @@ public:
 	AItem();
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void Execute() {};
-
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void RemoveUI();
+	void Execute();
 
-	void RemoveUI_Implementation() {};
+	virtual void Execute_Implementation() {};
 
 	virtual void SetPlayerOwner(AActor* pPlayerOwner) { playerOwner = pPlayerOwner; };
 

@@ -273,7 +273,7 @@ void AMyShip::PickItem_Implementation(TSubclassOf<AItem> pItem)
 
 void AMyShip::FreezeInput_Implementation(float duration)
 {
-	if (invicible)
+	if (invincible)
 		return;
 
 	DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
@@ -285,16 +285,11 @@ void AMyShip::RestoreInput_Implementation()
 	EnableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 }
 
-void AMyShip::useItem()
+void AMyShip::UseItem_Implementation()
 {
 	if (item)
 	{
 		item->Execute();
 		item = nullptr;
 	}
-}
-
-void AMyShip::Boost_Implementation()
-{
-
 }

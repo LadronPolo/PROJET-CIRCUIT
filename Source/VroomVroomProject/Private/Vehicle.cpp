@@ -13,7 +13,7 @@ void AVehicle::Tick(float DeltaTime)
 		UKismetSystemLibrary::PrintString(this, "GreenShell Acquired!");
 		ItemAcquired = false;
 		float RandItemUsageTime = UKismetMathLibrary::RandomFloatInRange(ItemUsageMinTime, ItemUsageMaxTime);
-		GetWorldTimerManager().SetTimer(GreenShellResetTimer, this, &AVehicle::useItem, RandItemUsageTime);
+		GetWorldTimerManager().SetTimer(GreenShellResetTimer, this, &AVehicle::UseItem_Implementation, RandItemUsageTime);
 	}
 	else if (HoldItem == EItem::EI_GreenShell)
 	{
@@ -71,7 +71,7 @@ void AVehicle::PickItem_Implementation(TSubclassOf<AItem> pItem)
 	item->SetPlayerOwner(this);
 }
 
-void AVehicle::useItem()
+void AVehicle::UseItem_Implementation()
 {
 	ItemAcquired = true;
 	HoldItem = EItem::EI_None;
@@ -92,7 +92,7 @@ void AVehicle::useItem()
 
 void AVehicle::FreezeInput_Implementation(float duration)
 {
-	if (invicible)
+	if (invincible)
 		return;
 
 	IsHitByItem = true;
@@ -102,9 +102,4 @@ void AVehicle::FreezeInput_Implementation(float duration)
 void AVehicle::RestoreInput_Implementation()
 {
 	IsHitByItem = false;
-}
-
-void AVehicle::Boost_Implementation()
-{
-
 }

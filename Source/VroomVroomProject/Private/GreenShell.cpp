@@ -54,7 +54,7 @@ void AGreenShell::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AGreenShell::Execute()
+void AGreenShell::Execute_Implementation()
 {	
 	FVector vector = playerOwner->GetActorForwardVector();
 	vector.Z = 0.f;
@@ -63,8 +63,6 @@ void AGreenShell::Execute()
 	ProjectileMovementComponent->bSimulationEnabled = true;
 	ProjectileMovementComponent->Velocity = vector * Speed;
 	SetLifeSpan(LifeSpan);
-
-	RemoveUI();
 
 	//Mesh->SetSimulatePhysics(true);
 };

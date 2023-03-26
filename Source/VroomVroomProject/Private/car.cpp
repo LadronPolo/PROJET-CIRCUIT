@@ -51,7 +51,7 @@ void Acar::PickItem_Implementation(TSubclassOf<AItem> pItem)
 
 void Acar::FreezeInput_Implementation(float duration)
 {
-	if (invicible)
+	if (invincible)
 		return;
 
 	DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
@@ -63,18 +63,29 @@ void Acar::RestoreInput_Implementation()
 	EnableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 }
 
-void Acar::useItem()
+void Acar::SetInvincible_Implementation(float duration)
+{
+	invincible = true;
+	GetWorldTimerManager().SetTimer(invincibleTimer, this, &Acar::DisableInvincibleTrigger, duration);
+}
+
+void Acar::DisableInvincibleTrigger()
+{
+	IAbilityPawn::Execute_DisableInvincible(this);
+}
+
+void Acar::DisableInvincible_Implementation()
+{
+	invincible = false;
+}
+
+void Acar::UseItem_Implementation()
 {
 	if (item)
 	{
 		item->Execute();
 		item = nullptr;
 	}
-}
-
-void Acar::Boost_Implementation()
-{
-
 }
 
 float Acar::getEnergyRemaining()

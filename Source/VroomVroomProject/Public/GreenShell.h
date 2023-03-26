@@ -29,8 +29,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class UProjectileMovementComponent* ProjectileMovementComponent;
 
-	
-	void Execute() override;
+	void Execute_Implementation() override;
 
 	void SetPlayerOwner(AActor* pPlayerOwner) override;
 

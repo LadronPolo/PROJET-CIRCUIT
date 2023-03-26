@@ -26,7 +26,9 @@ public:
 
 	AItem* item = nullptr;
 	FTimerHandle inputDisabled;
-	bool invicible = false;
+
+	FTimerHandle invincibleTimer;
+	bool invincible = false;
 
 
 	
@@ -49,7 +51,17 @@ public:
 
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
-	void Boost();
+	void SetInvincible(float duration);
 
-	virtual void Boost_Implementation() = 0;
+	virtual void SetInvincible_Implementation(float duration) = 0;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+	void DisableInvincible();
+
+	virtual void DisableInvincible_Implementation() = 0;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+	void UseItem();
+
+	virtual void UseItem_Implementation() = 0;
 };

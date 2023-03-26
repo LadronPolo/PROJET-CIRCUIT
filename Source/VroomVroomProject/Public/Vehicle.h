@@ -71,8 +71,9 @@ private:
 
 	void RestoreInput_Implementation() override;
 
-	void Boost_Implementation() override;
+	void SetInvincible_Implementation(float duration) override {};
 
-	UFUNCTION(BlueprintCallable)
-	void useItem();
+	void DisableInvincible_Implementation() override {};
+
+	void UseItem_Implementation() override;
 };
