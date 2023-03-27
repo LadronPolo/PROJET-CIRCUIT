@@ -22,12 +22,15 @@ public:
 	virtual void Logout(AController* Exitting) override;
 
 	UFUNCTION(BlueprintCallable)
-	static void sort(UPARAM(ref) TArray<FPlayerRanking>& pPlayers)
+	static void sort(UPARAM(ref) TArray<FPlayerRanking>& pPlayers, int totalLaps)
 	{
 		//Algo::SortBy(pPlayers, &FPlayerRanking::distance, TGreater<>());
 
-		pPlayers.Sort([](const FPlayerRanking& ip1, const FPlayerRanking& ip2) {
+		pPlayers.Sort([totalLaps](const FPlayerRanking& ip1, const FPlayerRanking& ip2) {
 			
+			if (ip1.laps == totalLaps)
+				return true;
+
 			if (ip1.laps == ip2.laps && ip1.checkpoint == ip2.checkpoint)
 				return ip1.distance < ip2.distance;
 			else if (ip1.laps == ip2.laps)
