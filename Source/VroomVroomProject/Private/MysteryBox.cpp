@@ -35,6 +35,8 @@ void AMysteryBox::BeginPlay()
 	ItemDropChanceByPlace.Add(FirstPlaceDropChance);
 }
 
+//bool AMysteryBox::SRPickupItem_Validate(AActor* OtherActor) {};
+
 void AMysteryBox::BoxPickUp(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	//AVehicle* VechicleCast = Cast<AVehicle>(OtherActor);
@@ -61,8 +63,10 @@ void AMysteryBox::BoxPickUp(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 	{
 		if (ability->item == nullptr)
 		{
-			int32 RandInt = UKismetMathLibrary::RandomIntegerInRange(0, items.Num() - 1);
-			IAbilityPawn::Execute_PickItem(OtherActor, items[RandInt]);
+			PickupItem(OtherActor);
+
+			/*int32 RandInt = UKismetMathLibrary::RandomIntegerInRange(0, items.Num() - 1);
+			IAbilityPawn::Execute_PickItem(OtherActor, items[RandInt]);*/
 		}
 
 

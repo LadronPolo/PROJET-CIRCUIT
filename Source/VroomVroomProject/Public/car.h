@@ -5,7 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "AbilityPawn.h"
+#include "CheckPoint.h"
 #include "car.generated.h"
+
 
 UCLASS()
 class VROOMVROOMPROJECT_API Acar : public APawn, public IAbilityPawn
@@ -66,4 +68,11 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool IsInvincible();
+
+	UFUNCTION(BlueprintCallable)
+	static void sort(UPARAM(ref) TArray<ACheckPoint*>& checkpoints)
+	{
+		Algo::SortBy(checkpoints, &ACheckPoint::number, TLess<>());
+
+	}
 };

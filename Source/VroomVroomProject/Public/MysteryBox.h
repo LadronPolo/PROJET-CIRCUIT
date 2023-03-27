@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "ItemTypes.h"
 #include "Item.h"
+#include "AbilityPawn.h"
 #include "MysteryBox.generated.h"
 
 UCLASS()
@@ -24,6 +25,12 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	class UBoxComponent* BoxCollider;
 
+	UFUNCTION(BlueprintNativeEvent, Category = "")
+	void PickupItem(AActor* OtherActor);
+	virtual void PickupItem_Implementation(AActor* OtherActor) {};
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, category = "item")
+	TArray<TSubclassOf<AItem>> items;
 protected:
 	virtual void BeginPlay() override;
 
@@ -35,7 +42,4 @@ private:
 
 	FTimerHandle BoxResetTimer;
 	TArray<TArray<EItem>> ItemDropChanceByPlace;
-
-	UPROPERTY(EditAnywhere, category="item")
-	TArray<TSubclassOf<AItem>> items;
 };
