@@ -5,7 +5,7 @@
 #include "Math/NumericLimits.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "DrawDebugHelpers.h"
-#include <Kismet/GameplayStatics.h>
+#include <Runtime/Engine/Classes/Kismet/GameplayStatics.h>
 
 // Sets default values
 AMyShip::AMyShip()
@@ -36,6 +36,7 @@ AMyShip::AMyShip()
 	timePast_ = 0.0f;
 	levitateSpeed_ = 5.0f;
 	gravitySpeed_ = 150.0f;
+	distanceToPlayer_ = 10.0f;
 
 	originalTurningBoost_ = floatingPawnMovement_->TurningBoost;
 	originalDeceleration_ = floatingPawnMovement_->Deceleration;
@@ -52,16 +53,14 @@ void AMyShip::MoveShip(float DeltaTime)
 {
 	FVector cameraDirectionForward = UKismetMathLibrary::GetForwardVector(springArm_->GetComponentRotation());
 	FVector cameraDirectionRight = UKismetMathLibrary::GetRightVector(springArm_->GetComponentRotation());
-	FVector inputDirection = cameraDirectionForward * axisX_ + cameraDirectionRight * axisY_;
-	inputDirection.Normalize();
+	FVector inputDirection;
 
 	if (accelInput_ != 0.0f && inputDirection.IsNearlyZero()) {
 		inputDirection = cameraDirectionForward * 1.0f + cameraDirectionRight * axisY_;
 	}
 
 	FRotator playerRot = GetActorRotation();
-	playerRot = FMath::Lerp(GetActorRotation(), currentRotation, speedOfRotation_ * DeltaTime * 8.0f);
-
+	playerRot = FMath::Lerp(GetActorRotation(), currentRotation, speedOfRotation_ * DeltaTime * 2.0f);
 
 	if (axisY_ != 0.0f)
 	{
@@ -74,10 +73,13 @@ void AMyShip::MoveShip(float DeltaTime)
 
 	if (!isFalling_)
 	{
-		SetActorRotation(playerRot);
+		//SetActorRotation(playerRot);
+		float lerp = FMath::Lerp(shipMesh_->GetRelativeRotation().Roll, axisY_ * 50.0f, DeltaTime * 2.0f);
+		FRotator newRot = shipMesh_->GetRelativeRotation();
+		newRot.Roll = lerp;
+		shipMesh_->SetRelativeRotation(newRot);
 		AddActorLocalRotation(FRotator(0, axisY_ * speedMultiplier_, 0));
 	}
-
 }
 
 void AMyShip::RotateShip(float DeltaTime)
@@ -89,7 +91,7 @@ void AMyShip::RotateShip(float DeltaTime)
 	FVector center;
 	FHitResult hit3;
 
-	if (GetWorld()->LineTraceSingleByChannel(hit3, GetActorLocation() + 10.0f, GetActorLocation() - lastRotation_ * (desiredHeight_ * 20.0f), ECC_Visibility, traceParams)) {
+	if (GetWorld()->LineTraceSingleByChannel(hit3, GetActorLocation(), GetActorLocation() - lastRotation_ * (desiredHeight_ * 1000.0f), ECC_Visibility, traceParams)) {
 		center = hit3.ImpactPoint + hit3.ImpactNormal * (desiredHeight_);
 		shipMesh_->SetEnableGravity(false);
 		isFalling_ = false;
@@ -98,27 +100,42 @@ void AMyShip::RotateShip(float DeltaTime)
 	else
 	{		
 		isFalling_ = true;
+		lastShipPosition_ = GetActorLocation();
 		if (!justDetached_)
 		{
 			justDetached_ = true;
 			lastShipPosition_ = GetActorLocation();
 		}
+
+
 	}
 
 	if (debug)DrawDebugSphere(GetWorld(), center, 100.0f, 32, FColor::Yellow);
 
-	FVector resultingPos;
-	if (center.Z >= GetActorLocation().Z) {
-		resultingPos = FMath::Lerp(GetActorLocation(), FVector(GetActorLocation().X, GetActorLocation().Y, center.Z), (DeltaTime * speedOfGoingToHeight_));
+	if (!isFalling_)
+	{
+		FVector resultingPos;
+		resultingPos = FMath::Lerp(GetActorLocation(), center, (DeltaTime * speedOfGoingToHeight_));
+		SetActorLocation(resultingPos);
 	}
-	else {
-		resultingPos = FMath::Lerp(GetActorLocation(), FVector(GetActorLocation().X, GetActorLocation().Y, center.Z), (DeltaTime * speedOfGoingToHeight_) / (FVector::Dist(hit.ImpactPoint, center) / gravitySpeed_));
-	}
-	SetActorLocation(resultingPos);
 
-	FRotator rotation = UKismetMathLibrary::MakeRotFromYZ(GetActorRightVector(), hit3.ImpactNormal);
 
-	currentRotation = rotation;
+	FVector UpVector = GetActorUpVector();
+	FVector NormalVector = hit3.ImpactNormal;
+
+	FVector RotationAxis = FVector::CrossProduct(UpVector, NormalVector);
+	RotationAxis.Normalize();
+
+	float DotProduct = FVector::DotProduct(UpVector, NormalVector);
+	float RotationAngle = acosf(DotProduct);
+
+	FQuat Quat = FQuat(RotationAxis, RotationAngle);
+	FQuat RootQuat = GetActorQuat();
+
+	FQuat NewQuat = Quat * RootQuat;
+
+	SetActorRotation(FQuat::Slerp(GetActorRotation().Quaternion(), NewQuat, 10.0f * DeltaTime));
+	//SetActorRotation(NewQuat.Rotator());
 
 	lastRotation_ = hit3.ImpactNormal;
 }
@@ -144,11 +161,6 @@ void AMyShip::CameraLookAtPlayer()
 	cameraComponent_->SetWorldRotation(lookRot);
 }
 
-void AMyShip::ForwardAxis(float input)
-{
-	axisX_ = input;
-}
-
 void AMyShip::SideAxis(float input)
 {
 	axisY_ = input;
@@ -162,7 +174,6 @@ void AMyShip::Accelerate(float input)
 	FVector M = GetActorLocation();							  //centre
 	FVector B = GetActorLocation() + blue_;					  //blue	
 	
-
 	FVector center = ((A + B) / 2);
 
 	red_ = center - M;
@@ -179,42 +190,29 @@ void AMyShip::Accelerate(float input)
 
 	if (isDrifiting_)
 	{
+
 		if (axisY_ != 0.0f)
 		{
-			angleAxis_ = axisY_ * 50.0f * deltaTime_;
-			//angleAxis_ = FMath::Clamp(angleAxis_, green_.Rotation().Yaw * axisY_, red_.Rotation().Yaw * axisY_);
+			angleAxis_ = axisY_ * 100.0f * deltaTime_;
 			yellow_ = yellow_.RotateAngleAxis(angleAxis_, GetActorUpVector());
-
-			//float pitch = FMath::Clamp(GetActorRotation().Yaw, green_.Rotation().Yaw * axisY_, blue_.Rotation().Yaw * axisY_);
-			//SetActorRotation(FRotator(0.0f, pitch, 0.0f));
-
-			//blue_ = green_.RotateAngleAxis(FMath::CeilToInt(axisY_) * 90.0f, GetActorUpVector());
-			AddMovementInput(green_, input);
 		}
 
-		floatingPawnMovement_->TurningBoost = originalTurningBoost_ - 100.0f;
-		floatingPawnMovement_->Deceleration = originalDeceleration_ - 100.0f;
-		springArm_->SocketOffset.Y *= axisY_ + 1.0f;
-		springArm_->SocketOffset.Y = FMath::Clamp(springArm_->SocketOffset.Y, 0.0f , 2.0f);
+		AddMovementInput(yellow_, input);
+
+		floatingPawnMovement_->TurningBoost = originalTurningBoost_ - 500.0f;
+		floatingPawnMovement_->Deceleration = originalDeceleration_ - 1000.0f;
+		springArm_->SocketOffset.Y *= axisY_ + 2.0f;
+		springArm_->SocketOffset.Y = FMath::Clamp(springArm_->SocketOffset.Y, 0.0f , 10.0f);
 	}
 	else
 	{
-		floatingPawnMovement_->TurningBoost = FMath::Lerp(floatingPawnMovement_->TurningBoost, originalTurningBoost_, GetWorld()->DeltaTimeSeconds * 2.0f);
-		floatingPawnMovement_->Deceleration = FMath::Lerp(floatingPawnMovement_->Deceleration, originalDeceleration_, GetWorld()->DeltaTimeSeconds * 5.0f);
-		springArm_->SocketOffset.Y = FMath::Lerp(springArm_->SocketOffset.Y, 0.0f, GetWorld()->DeltaTimeSeconds * 1.5f);
+
+		floatingPawnMovement_->TurningBoost = FMath::Lerp(floatingPawnMovement_->TurningBoost, originalTurningBoost_, GetWorld()->DeltaTimeSeconds * 10.0f);
+		floatingPawnMovement_->Deceleration = FMath::Lerp(floatingPawnMovement_->Deceleration, originalDeceleration_, GetWorld()->DeltaTimeSeconds * 10.0f);
+		springArm_->SocketOffset.Y = FMath::Lerp(springArm_->SocketOffset.Y, 0.0f, GetWorld()->DeltaTimeSeconds * 0.8f);
 
 		AddMovementInput(GetActorForwardVector(), input);
 	}
-
-	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + yellow_ * 500.0f, FColor::Yellow, false, -1.0f, 300.0f);
-	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + green_ * 1000.0f, FColor::Green, false, -1.0f, 100.0f);
-	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + red_ * 1000.0f, FColor::Red, false, -1.0f, 100.0f);
-	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + blue_ * 1000.0f, FColor::Blue, false, -1.0f, 100.0f);
-}
-
-void AMyShip::MoveCameraX(float input)
-{
-	//springArm_->AddRelativeRotation(FRotator(0, input, 0));
 }
 
 // Called every frame
@@ -226,6 +224,17 @@ void AMyShip::Tick(float DeltaTime)
 	MoveShip(DeltaTime);
 	RotateShip(DeltaTime);
 
+	if (isDrifiting_)
+	{
+		springArm_->CameraLagSpeed = FMath::Lerp(springArm_->CameraLagSpeed, 10.0f, GetWorld()->DeltaTimeSeconds);
+
+	}
+	else
+	{
+		springArm_->CameraLagSpeed = FMath::Lerp(springArm_->CameraLagSpeed, 40.0f, GetWorld()->DeltaTimeSeconds);
+
+	}
+
 	if (!isFalling_)
 	{
 		shipMesh_->SetSimulatePhysics(false);
@@ -233,11 +242,15 @@ void AMyShip::Tick(float DeltaTime)
 	}
 	else
 	{
-		cameraComponent_->SetWorldLocation(lastShipPosition_);
-		CameraLookAtPlayer();
+		springArm_->bInheritRoll = false;
+		springArm_->bInheritPitch = false;
+		springArm_->bInheritYaw = false;
+		//cameraComponent_->SetWorldLocation(lastShipPosition_);
+		//CameraLookAtPlayer();
 		shipMesh_->SetSimulatePhysics(true);
 		shipMesh_->SetEnableGravity(true);
-		springArm_->DetachFromParent();
+		//springArm_->DetachFromParent();
+		floatingPawnMovement_->Acceleration = 0.0f;
 		floatingPawnMovement_->TurningBoost = 0.0f;
 		floatingPawnMovement_->Deceleration = 1000.0f;
 	}
@@ -248,16 +261,7 @@ void AMyShip::Tick(float DeltaTime)
 void AMyShip::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	if (PlayerInputComponent) {
-		PlayerInputComponent->BindAxis("MoveForward", this, &AMyShip::ForwardAxis);
-		PlayerInputComponent->BindAxis("Accel", this, &AMyShip::Accelerate);
-		PlayerInputComponent->BindAxis("MoveLateral", this, &AMyShip::SideAxis);
-		PlayerInputComponent->BindAxis("LookRight", this, &AMyShip::MoveCameraX);
-		PlayerInputComponent->BindAction("Drift", IE_Pressed, this, &AMyShip::StartDrift);
-		PlayerInputComponent->BindAction("Drift", IE_Released, this, &AMyShip::StopDrift);
-	}
 }
-
 
 void AMyShip::PickItem_Implementation(TSubclassOf<AItem> pItem)
 {
@@ -285,6 +289,22 @@ void AMyShip::RestoreInput_Implementation()
 	EnableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 }
 
+void AMyShip::SetInvincible_Implementation(float duration)
+{
+	invincible = true;
+	GetWorldTimerManager().SetTimer(invincibleTimer, this, &AMyShip::DisableInvincibleTrigger, duration);
+}
+
+void AMyShip::DisableInvincibleTrigger()
+{
+	IAbilityPawn::Execute_DisableInvincible(this);
+}
+
+void AMyShip::DisableInvincible_Implementation()
+{
+	invincible = false;
+}
+
 void AMyShip::UseItem_Implementation()
 {
 	if (item)
@@ -293,3 +313,61 @@ void AMyShip::UseItem_Implementation()
 		item = nullptr;
 	}
 }
+
+void AMyShip::Miniaturize_Implementation(float duration)
+{
+	SetActorScale3D(FVector(0.25f, 0.25f, 0.25f));
+	GetWorldTimerManager().SetTimer(miniatureTimer, this, &AMyShip::ResetMiniaturizeTrigger, duration);
+}
+
+void AMyShip::ResetMiniaturizeTrigger()
+{
+	IAbilityPawn::Execute_ResetMiniaturize(this);
+}
+
+void AMyShip::ResetMiniaturize_Implementation()
+{
+	SetActorScale3D(FVector(1, 1, 1));
+}
+
+void AMyShip::AddEnergy_Implementation(float energy)
+{
+	EnergyRemaining = EnergyRemaining < EnergyMax ? (EnergyRemaining + energy) : EnergyMax;
+}
+
+float AMyShip::getEnergyRemaining()
+{
+	return EnergyRemaining;
+}
+
+bool AMyShip::canBoost()
+{
+	return BoostAvaillable;
+}
+
+bool AMyShip::IsBoost()
+{
+	return IsBoosting;
+}
+
+void AMyShip::SetIsBoost(bool pState)
+{
+	IsBoosting = pState;
+}
+
+void AMyShip::SetEnergyChargeRate(float pValue)
+{
+	EnergyChargeRate = pValue;
+}
+
+float AMyShip::getEnergyChargeRate()
+{
+	return EnergyChargeRate;
+}
+
+bool AMyShip::IsInvincible()
+{
+	return invincible;
+}
+
+

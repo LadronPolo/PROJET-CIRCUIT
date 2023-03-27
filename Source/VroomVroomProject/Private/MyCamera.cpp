@@ -10,6 +10,14 @@ UMyCamera::UMyCamera()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 	// ...
+	ship_ = (APawn*)GetOwner();
+	
+	springArm_ = CreateDefaultSubobject<USpringArmComponent>("SpringArm");
+
+	cameraComponent_ = CreateDefaultSubobject<UCameraComponent>("Camera");
+	cameraComponent_->SetupAttachment(springArm_);
+
+	distanceToPlayer_ = 10.0f;
 }
 
 
@@ -27,7 +35,15 @@ void UMyCamera::BeginPlay()
 void UMyCamera::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
+	
 	// ...
+}
+
+void UMyCamera::CameraFollowsSpline()
+{
+	worldLocation_ = ship_->GetActorLocation() + ship_->GetActorForwardVector() * distanceToPlayer_;
+	
+	FVector cameraPos = spline_->FindLocationClosestToWorldLocation(worldLocation_, ESplineCoordinateSpace::World);
+	springArm_->SetWorldLocation(cameraPos);
 }
 

@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "AbilityPawn.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
+#include "Components/SplineComponent.h"
+#include "AbilityPawn.h"
+#include "CheckPoint.h"
 #include "MyShip.generated.h"
 
 UCLASS()
@@ -19,7 +21,7 @@ public:
 	// Sets default values for this pawn's properties
 	AMyShip();
 
-	UPROPERTY(EditAnywhere, Category = "Stats")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 		UStaticMeshComponent* shipMesh_;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
@@ -39,6 +41,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		UFloatingPawnMovement* floatingPawnMovement_;
+
+	UPROPERTY(EditAnywhere, Category = "Stats")
+		USplineComponent* spline_;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		float speedOfRotation_;
@@ -70,22 +75,28 @@ protected:
 	virtual void BeginPlay() override;
 
 	void MoveShip(float DeltaTime);
-	void ForwardAxis(float input);
+
+	UFUNCTION(BlueprintCallable)
 	void SideAxis(float input);
+
+	UFUNCTION(BlueprintCallable)
 	void Accelerate(float input);
 
-	void MoveCameraX(float input);
 	void RotateShip(float DeltaTime);
 
+	UFUNCTION(BlueprintCallable)
 	void StartDrift();
+
+	UFUNCTION(BlueprintCallable)
 	void StopDrift();
 
 	void CameraLookAtPlayer();
 
+	void CameraFollowsSpline();
+
 	FVector lastShipPosition_;
 	bool justDetached_ = false;
 
-	float axisX_;
 	float axisY_;
 	float accelInput_;
 	bool  isDrifiting_ = false;
@@ -109,11 +120,13 @@ protected:
 	FVector blackVector_;
 	FRotator currentRotation;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	float distanceToPlayer_;
+	FVector worldLocation_;
+	FVector playerForwardVector_;
+	FVector playerLocation_;
 
-	// Called to bind functionality to input
+public:	
+	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 
@@ -123,9 +136,11 @@ public:
 
 	void RestoreInput_Implementation() override;
 
-	void SetInvincible_Implementation(float duration) override {};
+	void SetInvincible_Implementation(float duration) override;
 
-	void DisableInvincible_Implementation() override {};
+	void DisableInvincibleTrigger();
+
+	void DisableInvincible_Implementation() override;
 
 	void UseItem_Implementation() override;
 
@@ -133,9 +148,39 @@ public:
 
 	void AddImpule_Implementation(FVector value) override {};
 
-	void Miniaturize_Implementation(float duration) override {};
+	void Miniaturize_Implementation(float duration) override;
 
-	void ResetMiniaturize_Implementation() override {};
+	void ResetMiniaturizeTrigger();
 
-	void AddEnergy_Implementation(float energy) override {};
+	void ResetMiniaturize_Implementation() override;
+
+	void AddEnergy_Implementation(float energy) override;
+
+	UFUNCTION(BlueprintCallable)
+		float getEnergyRemaining();
+
+	UFUNCTION(BlueprintCallable)
+		bool canBoost();
+
+	UFUNCTION(BlueprintCallable)
+		bool IsBoost();
+
+	UFUNCTION(BlueprintCallable)
+		void SetIsBoost(bool pState);
+
+	UFUNCTION(BlueprintCallable)
+		void SetEnergyChargeRate(float pValue);
+
+	UFUNCTION(BlueprintCallable)
+		float getEnergyChargeRate();
+
+	UFUNCTION(BlueprintCallable)
+		bool IsInvincible();
+
+	UFUNCTION(BlueprintCallable)
+	static void sort(UPARAM(ref) TArray<ACheckPoint*>& checkpoints)
+	{
+		Algo::SortBy(checkpoints, &ACheckPoint::number, TLess<>());
+
+	}
 };
