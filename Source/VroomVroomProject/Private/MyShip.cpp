@@ -40,6 +40,8 @@ AMyShip::AMyShip()
 
 	originalTurningBoost_ = floatingPawnMovement_->TurningBoost;
 	originalDeceleration_ = floatingPawnMovement_->Deceleration;
+
+	EnergyChargeRate = 0;
 }
 
 // Called when the game starts or when spawned
@@ -173,7 +175,7 @@ void AMyShip::Accelerate(float input)
 	FVector A = GetActorLocation() + GetActorForwardVector(); //green
 	FVector M = GetActorLocation();							  //centre
 	FVector B = GetActorLocation() + blue_;					  //blue	
-	
+
 	FVector center = ((A + B) / 2);
 
 	red_ = center - M;
@@ -198,11 +200,13 @@ void AMyShip::Accelerate(float input)
 		}
 
 		AddMovementInput(yellow_, input);
+		
 
 		floatingPawnMovement_->TurningBoost = originalTurningBoost_ - 500.0f;
 		floatingPawnMovement_->Deceleration = originalDeceleration_ - 1000.0f;
+
 		springArm_->SocketOffset.Y *= axisY_ + 2.0f;
-		springArm_->SocketOffset.Y = FMath::Clamp(springArm_->SocketOffset.Y, 0.0f , 10.0f);
+		springArm_->SocketOffset.Y = FMath::Clamp(springArm_->SocketOffset.Y, 0.0f, 10.0f);
 	}
 	else
 	{
@@ -221,6 +225,7 @@ void AMyShip::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	deltaTime_ = DeltaTime;
 
+	
 	MoveShip(DeltaTime);
 	RotateShip(DeltaTime);
 
@@ -237,8 +242,8 @@ void AMyShip::Tick(float DeltaTime)
 
 	if (!isFalling_)
 	{
-		shipMesh_->SetSimulatePhysics(false);
-		shipMesh_->SetEnableGravity(false);
+		/*shipMesh_->SetSimulatePhysics(false);
+		shipMesh_->SetEnableGravity(false);*/
 	}
 	else
 	{
@@ -255,6 +260,9 @@ void AMyShip::Tick(float DeltaTime)
 		floatingPawnMovement_->Deceleration = 1000.0f;
 	}
 
+
+	EnergyRemaining = EnergyRemaining < EnergyMax ? (EnergyRemaining + DeltaTime * EnergyChargeRate) : EnergyMax;
+	BoostAvaillable = EnergyRemaining >= EnergyNeededToBoost;
 }
 
 // Called to bind functionality to input
@@ -370,4 +378,10 @@ bool AMyShip::IsInvincible()
 	return invincible;
 }
 
+void AMyShip::spendBoost()
+{
+	EnergyRemaining -= BoostCost;
+	if (EnergyRemaining < 0)
+		EnergyRemaining = 0;
+}
 

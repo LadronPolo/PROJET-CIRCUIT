@@ -39,7 +39,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		UCameraComponent* cameraComponent_;
 
-	UPROPERTY(EditAnywhere, Category = "Stats")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 		UFloatingPawnMovement* floatingPawnMovement_;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
@@ -48,7 +48,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		float speedOfRotation_;
 
-	UPROPERTY(EditAnywhere, Category = "Stats")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 		float desiredHeight_ = 200.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
@@ -176,6 +176,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		bool IsInvincible();
+
+	UFUNCTION(BlueprintCallable)
+	void spendBoost();
 
 	UFUNCTION(BlueprintCallable)
 	static void sort(UPARAM(ref) TArray<ACheckPoint*>& checkpoints)
