@@ -42,7 +42,7 @@ void AGreenShell::ShellHit(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 		return;
 
 	IAbilityPawn* ability = Cast<IAbilityPawn>(OtherActor);
-	if (ability && playerOwner != OtherActor)
+	if (ability && ability->invincible && playerOwner != OtherActor)
 	{
 		IAbilityPawn::Execute_FreezeInput(OtherActor, freezeDuration);
 		IAbilityPawn::Execute_SetVelocity(OtherActor, FVector(0, 0, 0));
