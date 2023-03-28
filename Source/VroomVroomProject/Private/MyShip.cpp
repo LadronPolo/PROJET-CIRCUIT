@@ -5,7 +5,6 @@
 #include "Math/NumericLimits.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "DrawDebugHelpers.h"
-#include <Runtime/Engine/Classes/Kismet/GameplayStatics.h>
 
 // Sets default values
 AMyShip::AMyShip()
@@ -40,8 +39,6 @@ AMyShip::AMyShip()
 
 	originalTurningBoost_ = floatingPawnMovement_->TurningBoost;
 	originalDeceleration_ = floatingPawnMovement_->Deceleration;
-
-	EnergyChargeRate = 0;
 }
 
 // Called when the game starts or when spawned
@@ -55,7 +52,8 @@ void AMyShip::MoveShip(float DeltaTime)
 {
 	FVector cameraDirectionForward = UKismetMathLibrary::GetForwardVector(springArm_->GetComponentRotation());
 	FVector cameraDirectionRight = UKismetMathLibrary::GetRightVector(springArm_->GetComponentRotation());
-	FVector inputDirection;
+	FVector inputDirection = cameraDirectionForward * axisX_ + cameraDirectionRight * axisY_;
+	inputDirection.Normalize();
 
 	if (accelInput_ != 0.0f && inputDirection.IsNearlyZero()) {
 		inputDirection = cameraDirectionForward * 1.0f + cameraDirectionRight * axisY_;
@@ -163,6 +161,11 @@ void AMyShip::CameraLookAtPlayer()
 	cameraComponent_->SetWorldRotation(lookRot);
 }
 
+void AMyShip::ForwardAxis(float input)
+{
+	axisX_ = input;
+}
+
 void AMyShip::SideAxis(float input)
 {
 	axisY_ = input;
@@ -175,7 +178,7 @@ void AMyShip::Accelerate(float input)
 	FVector A = GetActorLocation() + GetActorForwardVector(); //green
 	FVector M = GetActorLocation();							  //centre
 	FVector B = GetActorLocation() + blue_;					  //blue	
-
+	
 	FVector center = ((A + B) / 2);
 
 	red_ = center - M;
@@ -200,13 +203,11 @@ void AMyShip::Accelerate(float input)
 		}
 
 		AddMovementInput(yellow_, input);
-		
 
 		floatingPawnMovement_->TurningBoost = originalTurningBoost_ - 500.0f;
 		floatingPawnMovement_->Deceleration = originalDeceleration_ - 1000.0f;
-
 		springArm_->SocketOffset.Y *= axisY_ + 2.0f;
-		springArm_->SocketOffset.Y = FMath::Clamp(springArm_->SocketOffset.Y, 0.0f, 10.0f);
+		springArm_->SocketOffset.Y = FMath::Clamp(springArm_->SocketOffset.Y, 0.0f , 10.0f);
 	}
 	else
 	{
@@ -219,13 +220,17 @@ void AMyShip::Accelerate(float input)
 	}
 }
 
+void AMyShip::MoveCameraX(float input)
+{
+	//springArm_->AddRelativeRotation(FRotator(0, input, 0));
+}
+
 // Called every frame
 void AMyShip::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	deltaTime_ = DeltaTime;
 
-	
 	MoveShip(DeltaTime);
 	RotateShip(DeltaTime);
 
@@ -242,8 +247,8 @@ void AMyShip::Tick(float DeltaTime)
 
 	if (!isFalling_)
 	{
-		/*shipMesh_->SetSimulatePhysics(false);
-		shipMesh_->SetEnableGravity(false);*/
+		shipMesh_->SetSimulatePhysics(false);
+		shipMesh_->SetEnableGravity(false);
 	}
 	else
 	{
@@ -260,128 +265,20 @@ void AMyShip::Tick(float DeltaTime)
 		floatingPawnMovement_->Deceleration = 1000.0f;
 	}
 
-
-	EnergyRemaining = EnergyRemaining < EnergyMax ? (EnergyRemaining + DeltaTime * EnergyChargeRate) : EnergyMax;
-	BoostAvaillable = EnergyRemaining >= EnergyNeededToBoost;
 }
 
 // Called to bind functionality to input
 void AMyShip::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-}
-
-void AMyShip::PickItem_Implementation(TSubclassOf<AItem> pItem)
-{
-	FVector Location = GetActorLocation();
-	FRotator Rotation = GetActorRotation();
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-
-	item = Cast<AItem>(GetWorld()->SpawnActor(pItem.Get(), &Location, &Rotation, SpawnParams));
-	item->SetPlayerOwner(this);
-}
-
-void AMyShip::FreezeInput_Implementation(float duration)
-{
-	if (invincible)
-		return;
-
-	DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	GetWorldTimerManager().SetTimer(inputDisabled, this, &AMyShip::RestoreInput_Implementation, duration);
-}
-
-void AMyShip::RestoreInput_Implementation()
-{
-	EnableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-}
-
-void AMyShip::SetInvincible_Implementation(float duration)
-{
-	invincible = true;
-	GetWorldTimerManager().SetTimer(invincibleTimer, this, &AMyShip::DisableInvincibleTrigger, duration);
-}
-
-void AMyShip::DisableInvincibleTrigger()
-{
-	IAbilityPawn::Execute_DisableInvincible(this);
-}
-
-void AMyShip::DisableInvincible_Implementation()
-{
-	invincible = false;
-}
-
-void AMyShip::UseItem_Implementation()
-{
-	if (item)
-	{
-		item->Execute();
-		item = nullptr;
+	if (PlayerInputComponent) {
+		PlayerInputComponent->BindAxis("MoveForward", this, &AMyShip::ForwardAxis);
+		PlayerInputComponent->BindAxis("Accel", this, &AMyShip::Accelerate);
+		PlayerInputComponent->BindAxis("MoveLateral", this, &AMyShip::SideAxis);
+		PlayerInputComponent->BindAxis("LookRight", this, &AMyShip::MoveCameraX);
+		PlayerInputComponent->BindAction("Drift", IE_Pressed, this, &AMyShip::StartDrift);
+		PlayerInputComponent->BindAction("Drift", IE_Released, this, &AMyShip::StopDrift);
 	}
 }
 
-void AMyShip::Miniaturize_Implementation(float duration)
-{
-	SetActorScale3D(FVector(0.25f, 0.25f, 0.25f));
-	GetWorldTimerManager().SetTimer(miniatureTimer, this, &AMyShip::ResetMiniaturizeTrigger, duration);
-}
-
-void AMyShip::ResetMiniaturizeTrigger()
-{
-	IAbilityPawn::Execute_ResetMiniaturize(this);
-}
-
-void AMyShip::ResetMiniaturize_Implementation()
-{
-	SetActorScale3D(FVector(1, 1, 1));
-}
-
-void AMyShip::AddEnergy_Implementation(float energy)
-{
-	EnergyRemaining = EnergyRemaining < EnergyMax ? (EnergyRemaining + energy) : EnergyMax;
-}
-
-float AMyShip::getEnergyRemaining()
-{
-	return EnergyRemaining;
-}
-
-bool AMyShip::canBoost()
-{
-	return BoostAvaillable;
-}
-
-bool AMyShip::IsBoost()
-{
-	return IsBoosting;
-}
-
-void AMyShip::SetIsBoost(bool pState)
-{
-	IsBoosting = pState;
-}
-
-void AMyShip::SetEnergyChargeRate(float pValue)
-{
-	EnergyChargeRate = pValue;
-}
-
-float AMyShip::getEnergyChargeRate()
-{
-	return EnergyChargeRate;
-}
-
-bool AMyShip::IsInvincible()
-{
-	return invincible;
-}
-
-void AMyShip::spendBoost()
-{
-	EnergyRemaining -= BoostCost;
-	if (EnergyRemaining < 0)
-		EnergyRemaining = 0;
-}
 

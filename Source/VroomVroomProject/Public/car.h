@@ -70,6 +70,9 @@ public:
 	bool IsInvincible();
 
 	UFUNCTION(BlueprintCallable)
+	void spendBoost();
+
+	UFUNCTION(BlueprintCallable)
 	static void sort(UPARAM(ref) TArray<ACheckPoint*>& checkpoints)
 	{
 		Algo::SortBy(checkpoints, &ACheckPoint::number, TLess<>());
