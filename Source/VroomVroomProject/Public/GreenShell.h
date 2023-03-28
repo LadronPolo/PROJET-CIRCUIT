@@ -17,7 +17,7 @@ public:
 	UPROPERTY(EditInstanceOnly)
 	float LifeSpan = 10.f;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float Speed = 7000.f;
 
 	UPROPERTY(EditDefaultsOnly)
