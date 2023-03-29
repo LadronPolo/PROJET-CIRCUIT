@@ -139,3 +139,13 @@ void Acar::spendBoost()
 	if (EnergyRemaining < 0)
 		EnergyRemaining = 0;
 }
+
+float Acar::getBoostCost()
+{
+	return BoostCost;
+}
+
+void Acar::SetEnergyRemaining(float pValue)
+{
+	EnergyRemaining = pValue;
+}

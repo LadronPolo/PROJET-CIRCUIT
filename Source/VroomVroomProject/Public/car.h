@@ -73,9 +73,21 @@ public:
 	void spendBoost();
 
 	UFUNCTION(BlueprintCallable)
+	float getBoostCost();
+
+	UFUNCTION(BlueprintCallable)
+	void SetEnergyRemaining(float pValue);
+
+	UFUNCTION(BlueprintCallable)
 	static void sort(UPARAM(ref) TArray<ACheckPoint*>& checkpoints)
 	{
 		Algo::SortBy(checkpoints, &ACheckPoint::number, TLess<>());
 
+	}
+
+	UFUNCTION(BlueprintCallable)
+	static float RangeLerp(float min, float max, float t)
+	{
+		return (1 / (max - min)) * (t - min);
 	}
 };
