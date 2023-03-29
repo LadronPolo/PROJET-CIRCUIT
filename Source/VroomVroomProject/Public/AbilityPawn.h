@@ -17,7 +17,7 @@ class VROOMVROOMPROJECT_API IAbilityPawn {
 
 public:
 	float EnergyMax = 100.f;
-	float EnergyRemaining = 45.f;
+	float EnergyRemaining = 20.f;
 	float EnergyChargeRate = 2.f;
 	float EnergyNeededToBoost = 40.f;
 	float BoostCost = 25.f;
