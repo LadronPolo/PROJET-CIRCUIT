@@ -44,7 +44,12 @@ void Acar::FreezeInput_Implementation(float duration)
 		return;
 
 	DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	GetWorldTimerManager().SetTimer(inputDisabled, this, &Acar::RestoreInput_Implementation, duration);
+	GetWorldTimerManager().SetTimer(inputDisabled, this, &Acar::ResetInputTrigger, duration);
+}
+
+void Acar::ResetInputTrigger()
+{
+	IAbilityPawn::Execute_RestoreInput(this);
 }
 
 void Acar::RestoreInput_Implementation()

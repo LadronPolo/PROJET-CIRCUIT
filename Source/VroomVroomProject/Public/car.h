@@ -26,6 +26,8 @@ public:
 
 	void FreezeInput_Implementation(float duration) override;
 
+	void ResetInputTrigger();
+
 	void RestoreInput_Implementation() override;
 
 	void SetInvincible_Implementation(float duration) override;
