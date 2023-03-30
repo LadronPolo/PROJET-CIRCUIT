@@ -154,3 +154,8 @@ void Acar::SetEnergyRemaining(float pValue)
 {
 	EnergyRemaining = pValue;
 }
+
+void Acar::nullifyItem()
+{
+	item = nullptr;
+}

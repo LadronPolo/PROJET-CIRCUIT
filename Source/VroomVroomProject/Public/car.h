@@ -81,6 +81,9 @@ public:
 	void SetEnergyRemaining(float pValue);
 
 	UFUNCTION(BlueprintCallable)
+	void nullifyItem();
+
+	UFUNCTION(BlueprintCallable)
 	static void sort(UPARAM(ref) TArray<ACheckPoint*>& checkpoints)
 	{
 		Algo::SortBy(checkpoints, &ACheckPoint::number, TLess<>());
