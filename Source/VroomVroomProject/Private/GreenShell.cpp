@@ -73,12 +73,11 @@ void AGreenShell::SetPlayerOwner(AActor* pPlayerOwner)
 {
 	Super::SetPlayerOwner(pPlayerOwner);
 
-	TArray<UActorComponent*> elements = pPlayerOwner->GetComponentsByClass(UStaticMeshComponent::StaticClass());
+	TArray<UActorComponent*> elements = pPlayerOwner->GetComponentsByClass(USkeletalMeshComponent::StaticClass());
 	for (int i = 0; i < elements.Num(); i++)
 	{
-		UStaticMeshComponent* meshCp = Cast<UStaticMeshComponent>(elements[i]);
-		UStaticMesh* mesh = meshCp->GetStaticMesh();
-		if (mesh->FindSocket("Shell") != nullptr)
+		USkeletalMeshComponent* meshCp = Cast<USkeletalMeshComponent>(elements[i]);
+		if (meshCp && meshCp->GetSocketByName("Shell") != nullptr)
 		{
 			AttachToComponent(meshCp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Shell");
 			return;

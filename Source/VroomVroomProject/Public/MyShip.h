@@ -8,12 +8,10 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Components/SplineComponent.h"
-#include "AbilityPawn.h"
-#include "CheckPoint.h"
 #include "MyShip.generated.h"
 
 UCLASS()
-class VROOMVROOMPROJECT_API AMyShip : public APawn, public IAbilityPawn
+class VROOMVROOMPROJECT_API AMyShip : public APawn
 {
 	GENERATED_BODY()
 
@@ -21,7 +19,7 @@ public:
 	// Sets default values for this pawn's properties
 	AMyShip();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	UPROPERTY(EditAnywhere, Category = "Stats")
 		UStaticMeshComponent* shipMesh_;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
@@ -39,7 +37,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		UCameraComponent* cameraComponent_;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	UPROPERTY(EditAnywhere, Category = "Stats")
 		UFloatingPawnMovement* floatingPawnMovement_;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
@@ -48,7 +46,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		float speedOfRotation_;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	UPROPERTY(EditAnywhere, Category = "Stats")
 		float desiredHeight_ = 200.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
@@ -75,19 +73,14 @@ protected:
 	virtual void BeginPlay() override;
 
 	void MoveShip(float DeltaTime);
-
-	UFUNCTION(BlueprintCallable)
+	void ForwardAxis(float input);
 	void SideAxis(float input);
-
-	UFUNCTION(BlueprintCallable)
 	void Accelerate(float input);
 
+	void MoveCameraX(float input);
 	void RotateShip(float DeltaTime);
 
-	UFUNCTION(BlueprintCallable)
 	void StartDrift();
-
-	UFUNCTION(BlueprintCallable)
 	void StopDrift();
 
 	void CameraLookAtPlayer();
@@ -97,6 +90,7 @@ protected:
 	FVector lastShipPosition_;
 	bool justDetached_ = false;
 
+	float axisX_;
 	float axisY_;
 	float accelInput_;
 	bool  isDrifiting_ = false;
@@ -126,64 +120,10 @@ protected:
 	FVector playerLocation_;
 
 public:	
+	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-
-	void PickItem_Implementation(TSubclassOf<AItem> pItem) override;
-
-	void FreezeInput_Implementation(float duration) override;
-
-	void RestoreInput_Implementation() override;
-
-	void SetInvincible_Implementation(float duration) override;
-
-	void DisableInvincibleTrigger();
-
-	void DisableInvincible_Implementation() override;
-
-	void UseItem_Implementation() override;
-
-	void SetVelocity_Implementation(FVector value) override {};
-
-	void AddImpule_Implementation(FVector value) override {};
-
-	void Miniaturize_Implementation(float duration) override;
-
-	void ResetMiniaturizeTrigger();
-
-	void ResetMiniaturize_Implementation() override;
-
-	void AddEnergy_Implementation(float energy) override;
-
-	UFUNCTION(BlueprintCallable)
-		float getEnergyRemaining();
-
-	UFUNCTION(BlueprintCallable)
-		bool canBoost();
-
-	UFUNCTION(BlueprintCallable)
-		bool IsBoost();
-
-	UFUNCTION(BlueprintCallable)
-		void SetIsBoost(bool pState);
-
-	UFUNCTION(BlueprintCallable)
-		void SetEnergyChargeRate(float pValue);
-
-	UFUNCTION(BlueprintCallable)
-		float getEnergyChargeRate();
-
-	UFUNCTION(BlueprintCallable)
-		bool IsInvincible();
-
-	UFUNCTION(BlueprintCallable)
-	void spendBoost();
-
-	UFUNCTION(BlueprintCallable)
-	static void sort(UPARAM(ref) TArray<ACheckPoint*>& checkpoints)
-	{
-		Algo::SortBy(checkpoints, &ACheckPoint::number, TLess<>());
-
-	}
 };
