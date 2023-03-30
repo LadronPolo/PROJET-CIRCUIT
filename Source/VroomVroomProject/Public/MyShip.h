@@ -39,7 +39,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		UCameraComponent* cameraComponent_;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	UPROPERTY(EditAnywhere, Category = "Stats")
 		UFloatingPawnMovement* floatingPawnMovement_;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
@@ -48,7 +48,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Stats")
 		float speedOfRotation_;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	UPROPERTY(EditAnywhere, Category = "Stats")
 		float desiredHeight_ = 200.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
@@ -92,8 +92,6 @@ protected:
 
 	void CameraLookAtPlayer();
 
-	void CameraFollowsSpline();
-
 	FVector lastShipPosition_;
 	bool justDetached_ = false;
 
@@ -110,6 +108,20 @@ protected:
 
 	float angleAxis_ = 0.0f;
 
+	float timer_;
+	float decelerationTimer_;
+	float lastSpeedMax_;
+
+	float boosterLoopSpeed_ = 1.2f;
+	float boosterLoopCount_;
+	float canGetDriftBoost_;
+
+	bool isInBoost_;
+
+	bool boost_;
+	float boostAmount_;
+	float boostTimer_;
+
 	FVector green_;
 	FVector blue_;
 	FVector red_;
@@ -124,6 +136,8 @@ protected:
 	FVector worldLocation_;
 	FVector playerForwardVector_;
 	FVector playerLocation_;
+
+	float speed_ = 0.0f;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
@@ -178,12 +192,13 @@ public:
 		bool IsInvincible();
 
 	UFUNCTION(BlueprintCallable)
-	void spendBoost();
-
-	UFUNCTION(BlueprintCallable)
 	static void sort(UPARAM(ref) TArray<ACheckPoint*>& checkpoints)
 	{
 		Algo::SortBy(checkpoints, &ACheckPoint::number, TLess<>());
 
 	}
+
+
+	float currentForwardSpeed_;
+	float currentLateralSpeed_;
 };
