@@ -66,11 +66,6 @@ bool UMenu::Initialize()
 		JoinButton->OnClicked.AddDynamic(this, &UMenu::JoinButtonClicked);
 	}
 
-	if (LoadingContainer)
-	{
-		LoadingContainer->SetVisibility(ESlateVisibility::Hidden);
-	}
-
 	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance)
 	{
@@ -127,8 +122,6 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResu
 
 	if (!bWasSuccessful || SessionResults.Num() == 0)
 	{
-		LoadingContainer->SetVisibility(ESlateVisibility::Hidden);
-		ButtonContainer->SetVisibility(ESlateVisibility::Visible);
 
 		JoinButton->SetIsEnabled(true);
 		if (GEngine)
@@ -192,9 +185,6 @@ void UMenu::HostButtonClicked()
 
 void UMenu::JoinButtonClicked()
 {
-	LoadingContainer->SetVisibility(ESlateVisibility::Visible);
-	ButtonContainer->SetVisibility(ESlateVisibility::Hidden);
-
 	JoinButton->SetIsEnabled(false);
 	if (MultiplayerSessionsSubsystem)
 		MultiplayerSessionsSubsystem->FindSessions(10000);

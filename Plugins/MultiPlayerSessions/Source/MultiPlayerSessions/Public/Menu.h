@@ -42,10 +42,6 @@ protected:
 	void OnStartSession(bool bWasSuccessful);
 
 public:
-
-	UPROPERTY(meta = (BindWidget))
-	class UVerticalBox* ButtonContainer;
-
 	UPROPERTY(meta = (BindWidget))
 	class UButton* HostButton;
 
@@ -60,8 +56,6 @@ public:
 
 	void MenuTearDown();
 
-	UPROPERTY(meta = (BindWidget))
-	UVerticalBox* LoadingContainer;
 
 	UPROPERTY(meta = (BindWidgetAnim), BlueprintReadWrite, Transient)
 	class UWidgetAnimation* Fade;
