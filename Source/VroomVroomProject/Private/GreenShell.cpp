@@ -64,7 +64,7 @@ void AGreenShell::Execute_Implementation()
 	ProjectileMovementComponent->bSimulationEnabled = true;
 	ProjectileMovementComponent->Velocity = vector * Speed;
 	SetLifeSpan(LifeSpan);
-
+	InWorld = true;
 	//Mesh->SetSimulatePhysics(true);
 };
 

@@ -14,6 +14,9 @@ public:
 	AGreenShell();
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(BlueprintReadWrite)
+	bool InWorld = false;
+
 	UPROPERTY(EditInstanceOnly)
 	float LifeSpan = 10.f;
 
