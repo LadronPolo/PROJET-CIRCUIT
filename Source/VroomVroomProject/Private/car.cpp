@@ -34,8 +34,11 @@ void Acar::PickItem_Implementation(TSubclassOf<AItem> pItem)
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 
-	item = Cast<AItem>(GetWorld()->SpawnActor(pItem.Get(), &Location, &Rotation, SpawnParams));
-	item->SetPlayerOwner(this);
+	if (!item)
+	{
+		item = Cast<AItem>(GetWorld()->SpawnActor(pItem.Get(), &Location, &Rotation, SpawnParams));
+		item->SetPlayerOwner(this);
+	}
 }
 
 void Acar::FreezeInput_Implementation(float duration)
