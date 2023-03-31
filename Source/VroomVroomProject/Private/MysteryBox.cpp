@@ -44,8 +44,8 @@ void AMysteryBox::BoxPickUp(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 		if (ability->item == nullptr)
 			PickupItem(OtherActor);
 
-
-		Mesh->SetVisibility(false);
+		if(Box)
+		Box->SetVisibility(false);
 		BoxCollider->SetGenerateOverlapEvents(false);
 		BoxCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
@@ -55,7 +55,8 @@ void AMysteryBox::BoxPickUp(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 
 void AMysteryBox::ResetBox()
 {
-	Mesh->SetVisibility(true);
+	if (Box)
+	Box->SetVisibility(true);
 	BoxCollider->SetGenerateOverlapEvents(true);
 	BoxCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }
